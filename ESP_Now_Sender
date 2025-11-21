@@ -1,0 +1,47 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_LSM303_Accel.h>
+#include <Adafruit_LSM303DLH_Mag.h>
+
+// Create accelerometer + magnetometer objects
+Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(12345);
+Adafruit_LSM303DLH_Mag mag = Adafruit_LSM303DLH_Mag();
+
+void setup() {
+  Serial.begin(115200);
+
+  // Must specify ESP32 I2C pins
+  Wire.begin(21, 22);  // SDA, SCL
+
+  Serial.println("LSM303DLHC test...");
+
+  if (!accel.begin()) {
+    Serial.println("** Accelerometer NOT FOUND **");
+    while (1) delay(10);
+  }
+
+  if (!mag.begin()) {
+    Serial.println("** Magnetometer NOT FOUND **");
+    while (1) delay(10);
+  }
+
+  Serial.println("Sensors OK.");
+}
+
+void loop() {
+  sensors_event_t a, m;
+
+  accel.getEvent(&a);
+  mag.getEvent(&m);
+
+  Serial.print("Accel (m/s^2)  X: "); Serial.print(a.acceleration.x);
+  Serial.print("  Y: "); Serial.print(a.acceleration.y);
+  Serial.print("  Z: "); Serial.println(a.acceleration.z);
+
+  Serial.print("Mag (uT)       X: "); Serial.print(m.magnetic.x);
+  Serial.print("  Y: "); Serial.print(m.magnetic.y);
+  Serial.print("  Z: "); Serial.println(m.magnetic.z);
+
+  Serial.println();
+  delay(300);
+}
