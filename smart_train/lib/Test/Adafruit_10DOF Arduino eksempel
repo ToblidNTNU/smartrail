@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303_U.h>
@@ -9,10 +10,11 @@
 Adafruit_10DOF                dof   = Adafruit_10DOF();
 Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(30301);
 Adafruit_LSM303_Mag_Unified   mag   = Adafruit_LSM303_Mag_Unified(30302);
+Adafruit_L3GD20_Unified       gyro  = Adafruit_L3GD20_Unified(20);
 Adafruit_BMP085_Unified       bmp   = Adafruit_BMP085_Unified(18001);
 
 /* Update this with the correct SLP for accurate altitude measurements */
-float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+float seaLevelPressure = 983;    //SENSORS_PRESSURE_SEALEVELHPA;  -> sjekk hPa på yr.no
 
 /**************************************************************************/
 /*!
@@ -33,12 +35,19 @@ void initSensors()
     Serial.println("Ooops, no LSM303 detected ... Check your wiring!");
     while(1);
   }
+  if(!gyro.begin())
+  {
+    /* There was a problem detecting the L3GD20 ... check your connections */
+    Serial.println("Ooops, no L3GD20 detected ... Check your wiring!");
+    while(1);
+  }
   if(!bmp.begin())
   {
     /* There was a problem detecting the BMP180 ... check your connections */
     Serial.println("Ooops, no BMP180 detected ... Check your wiring!");
     while(1);
   }
+  Serial.println("Sensors OK");
 }
 
 /**************************************************************************/
@@ -48,7 +57,8 @@ void initSensors()
 /**************************************************************************/
 void setup(void)
 {
-  Serial.begin(115200);
+  Serial.begin(9600); // Må endres når vi kobler til esp
+  Wire.begin(); // Må endres når vi kobler til esp
   Serial.println(F("Adafruit 10 DOF Pitch/Roll/Heading Example")); Serial.println("");
   
   /* Initialise the sensors */
@@ -64,8 +74,23 @@ void loop(void)
 {
   sensors_event_t accel_event;
   sensors_event_t mag_event;
+  sensors_event_t gyro_event;
   sensors_event_t bmp_event;
   sensors_vec_t   orientation;
+
+  /* Show acceleration (m/s^2)*/
+  accel.getEvent(&accel_event);
+  Serial.print("AX: "); Serial.print(accel_event.acceleration.x);
+  Serial.print(", AY: "); Serial.print(accel_event.acceleration.y);
+  Serial.print(", AZ: "); Serial.println(accel_event.acceleration.z);
+
+  /* Show rotation (rad/s)*/
+  gyro.getEvent(&gyro_event);
+  Serial.print("GX: "); Serial.print(gyro_event.gyro.x);
+  Serial.print(", GY: "); Serial.print(gyro_event.gyro.y);
+  Serial.print(", GZ: "); Serial.println(gyro_event.gyro.z);
+
+  Serial.println(" ");
 
   /* Calculate pitch and roll from the raw accelerometer data */
   accel.getEvent(&accel_event);
@@ -108,7 +133,6 @@ void loop(void)
     Serial.print(temperature);
     Serial.print(F(" C"));
   }
-  
   Serial.println(F(""));
   delay(1000);
 }
